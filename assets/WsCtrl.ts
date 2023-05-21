@@ -1,4 +1,4 @@
-import { _decorator, Component, EditBox } from 'cc';
+import { _decorator, Component, EditBox, find, instantiate, loader, assetManager, director } from 'cc';
 const { ccclass, property } = _decorator;
 
 
@@ -66,16 +66,24 @@ export class WsCtrl extends Component {
         let wsurl = this.UrlInput.string
         this.socket = new WebSocket(wsurl)
         this.socket.binaryType = "arraybuffer"
-        this.socket.onmessage = (event) => {
-            console.log("receive", event.data)
-            let msg = this.unpack(event.data)
-            console.log("msg", msg)
+        this.socket.onopen = (event) => {
+            console.log("open")
+            this.isConnected = true
         }
         this.socket.onclose = (event) => {
             console.log("close", event)
             this.isConnected = false
         }
-        this.isConnected = true
+        this.socket.onerror = (event) => {
+            console.log("error", event)
+            this.isConnected = false
+        }
+        this.socket.onmessage = (event) => {
+            console.log("receive", event.data)
+            let msg = this.unpack(event.data)
+            console.log("msg", msg)
+        }
+        
     }
 
     close() {
@@ -88,13 +96,17 @@ export class WsCtrl extends Component {
 
     send() {
         console.log("send")
-        if (!this.isConnected) {
-            this.connect()
+        if (!this.socket || this.socket.readyState != WebSocket.OPEN) {
+            console.log("not connected")
             return
         }
         let cmd = '1'
         let content = this.MsgInput.string
         this.socket.send(this.pack(Number(`0x${cmd}`), content))
+    }
+
+    scene2() {
+        director.loadScene("scene2")
     }
 }
 
