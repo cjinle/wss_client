@@ -1,37 +1,54 @@
-import { _decorator, Component, EditBox, find, instantiate, loader, assetManager, director } from 'cc';
-const { ccclass, property } = _decorator;
+import { EventTarget } from "cc";
 
+export default class NetworkMgr {
 
-@ccclass('WsCtrl')
-export class WsCtrl extends Component {
-    @property(EditBox)
-    UrlInput: EditBox
+    static _instance: NetworkMgr;
 
-    @property(EditBox)
-    MsgInput: EditBox
+    _eventTarget: EventTarget;
 
-    socket: WebSocket
-    isConnected: boolean
-    
-    start() {
-        console.log("wsctrl start...")
+    socket: WebSocket;
+    isConnected: boolean;
+
+    static instance(): NetworkMgr {
+        if (!this._instance) {
+            this._instance = new NetworkMgr();
+            console.debug("network mgr instance");
+        }
+        return this._instance;
+    }
+
+    register(event: string, callback: any, obj: object) {
+        console.log("register");
+        if (!this._eventTarget) {
+            this._eventTarget = new EventTarget();
+        }
+        try {
+            this._eventTarget.on(event, callback, obj);
+        } catch (error) {
+            console.log("register", error);
+        }
+    }
+
+    unregister() {
+        console.log("unregister");
+        this._eventTarget.off("ws");
     }
 
     pack(id: number, str: string): ArrayBuffer {
         if (!str) {
-            console.log("error str", str)
-            return new ArrayBuffer(0)
+            console.log("error str", str);
+            return new ArrayBuffer(0);
         }
-        let arr =  new TextEncoder().encode(str)
-        let len = arr.length
-        let buffer = new ArrayBuffer(8 + len)
-        let view = new DataView(buffer)
-        view.setUint32(0, len)
-        view.setUint32(4, id)
+        let arr =  new TextEncoder().encode(str);
+        let len = arr.length;
+        let buffer = new ArrayBuffer(8 + len);
+        let view = new DataView(buffer);
+        view.setUint32(0, len);
+        view.setUint32(4, id);
         for (let i = 0; i < len; i++) {
-            view.setUint8(8 + i, arr[i])
+            view.setUint8(8 + i, arr[i]);
         }
-        return buffer
+        return buffer;
     }
 
     unpack(buffer: ArrayBuffer): object {
@@ -56,14 +73,13 @@ export class WsCtrl extends Component {
         return msg
     }
 
-    connect() {
-        console.log("connect", this.UrlInput.string)
+    connect(wsurl: string) {
+        console.log("connect", wsurl)
         if (this.isConnected) {
             this.socket.close()
             this.socket = null
             this.isConnected = false
         }
-        let wsurl = this.UrlInput.string
         this.socket = new WebSocket(wsurl)
         this.socket.binaryType = "arraybuffer"
         this.socket.onopen = (event) => {
@@ -82,8 +98,10 @@ export class WsCtrl extends Component {
             console.log("receive", event.data)
             let msg = this.unpack(event.data)
             console.log("msg", msg)
+            if (this._eventTarget) {
+                this._eventTarget.emit("ws", msg)
+            }
         }
-        
     }
 
     close() {
@@ -94,19 +112,14 @@ export class WsCtrl extends Component {
         this.socket.close()
     }
 
-    send() {
+    send(cmd: number, str: string) {
         console.log("send")
         if (!this.socket || this.socket.readyState != WebSocket.OPEN) {
             console.log("not connected")
             return
         }
-        let cmd = '1'
-        let content = this.MsgInput.string
-        this.socket.send(this.pack(Number(`0x${cmd}`), content))
-    }
-
-    scene2() {
-        director.loadScene("scene2")
+        this.socket.send(this.pack(Number(`0x${cmd}`), str))
     }
 }
+
 
