@@ -17,13 +17,13 @@ export default class NetworkMgr {
         return this._instance;
     }
 
-    register(event: string, callback: any, obj: object) {
+    register(callback: any, obj: object) {
         console.log("register");
         if (!this._eventTarget) {
             this._eventTarget = new EventTarget();
         }
         try {
-            this._eventTarget.on(event, callback, obj);
+            this._eventTarget.on('NetworkMgr', callback, obj);
         } catch (error) {
             console.log("register", error);
         }
@@ -31,7 +31,7 @@ export default class NetworkMgr {
 
     unregister() {
         console.log("unregister");
-        this._eventTarget.off("ws");
+        this._eventTarget.off('NetworkMgr');
     }
 
     pack(id: number, str: string): ArrayBuffer {
@@ -53,72 +53,72 @@ export default class NetworkMgr {
 
     unpack(buffer: ArrayBuffer): object {
         if (!buffer || !(buffer instanceof ArrayBuffer)) {
-            console.log("buffer type err", buffer)
+            console.log("buffer type err", buffer);
             return
         }
-        let view = new DataView(buffer)
+        let view = new DataView(buffer);
         let msg = {
             len: view.getUint32(0),
             id: view.getUint32(4),
             buffer: buffer.slice(8),
             data: {}
-        }
+        };
     
-        let dec = new TextDecoder("utf-8")
+        let dec = new TextDecoder("utf-8");
         try {
-            msg.data = JSON.parse(dec.decode(new Uint8Array(msg.buffer)))
+            msg.data = JSON.parse(dec.decode(new Uint8Array(msg.buffer)));
         } catch (error) {
-            console.log(error, dec.decode(msg.buffer))
+            console.log(error, dec.decode(msg.buffer));
         }
-        return msg
+        return msg;
     }
 
     connect(wsurl: string) {
-        console.log("connect", wsurl)
+        console.log("connect", wsurl);
         if (this.isConnected) {
-            this.socket.close()
-            this.socket = null
-            this.isConnected = false
+            this.socket.close();
+            this.socket = null;
+            this.isConnected = false;
         }
-        this.socket = new WebSocket(wsurl)
-        this.socket.binaryType = "arraybuffer"
+        this.socket = new WebSocket(wsurl);
+        this.socket.binaryType = "arraybuffer";
         this.socket.onopen = (event) => {
-            console.log("open")
-            this.isConnected = true
+            console.log("open");
+            this.isConnected = true;
         }
         this.socket.onclose = (event) => {
-            console.log("close", event)
-            this.isConnected = false
+            console.log("close", event);
+            this.isConnected = false;
         }
         this.socket.onerror = (event) => {
-            console.log("error", event)
-            this.isConnected = false
+            console.log("error", event);
+            this.isConnected = false;
         }
         this.socket.onmessage = (event) => {
-            console.log("receive", event.data)
-            let msg = this.unpack(event.data)
-            console.log("msg", msg)
+            console.log("receive", event.data);
+            let msg = this.unpack(event.data);
+            console.log("msg", msg);
             if (this._eventTarget) {
-                this._eventTarget.emit("ws", msg)
+                this._eventTarget.emit("ws", msg);
             }
         }
     }
 
     close() {
-        console.log("close")
+        console.log("close");
         if (!this.isConnected) {
-            return
+            return;
         }
-        this.socket.close()
+        this.socket.close();
     }
 
     send(cmd: number, str: string) {
-        console.log("send")
+        console.log("send");
         if (!this.socket || this.socket.readyState != WebSocket.OPEN) {
-            console.log("not connected")
-            return
+            console.log("not connected");
+            return;
         }
-        this.socket.send(this.pack(Number(`0x${cmd}`), str))
+        this.socket.send(this.pack(Number(`0x${cmd}`), str));
     }
 }
 
