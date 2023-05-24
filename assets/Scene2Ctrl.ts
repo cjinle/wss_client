@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, director } from 'cc';
+import { _decorator, Component, Node, director, instantiate } from 'cc';
 import NetworkMgr from './NetworkMgr';
 const { ccclass, property } = _decorator;
 
@@ -6,11 +6,12 @@ const { ccclass, property } = _decorator;
 export class Scene2Mgr extends Component {
 
     start() {
-        NetworkMgr.instance().register("ws", this.message, this);
+        NetworkMgr.instance().register(this.message, this);
     }
 
     onDestroy() {
         // NetworkMgr.instance().unregister();
+        
     }
 
     back() {
@@ -20,7 +21,7 @@ export class Scene2Mgr extends Component {
 
     send() {
         console.log(NetworkMgr.instance());
-        // NetworkMgr.instance().register("ws", this.message, this)
+        // NetworkMgr.instance().register(this.message, this)
         NetworkMgr.instance().send(2, `{"helo":"world"}`)
     }
 
@@ -28,7 +29,6 @@ export class Scene2Mgr extends Component {
         console.log("scene2 msg", msg)
     }
 
-    
 
 }
 

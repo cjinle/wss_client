@@ -13,7 +13,7 @@ export class WsCtrl2 extends Component {
     
     start() {
         console.log("wsctrl2 start...")
-        NetworkMgr.instance().register("ws", this.message, this)
+        NetworkMgr.instance().register(this.message, this)
     }
 
     onDestroy() {
